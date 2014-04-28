@@ -18,6 +18,7 @@ const (
 )
 
 var (
+	httpClient      *http.Client
 	lineTraceOffset = 2
 
 	// Use the same notifier JSON for all requests
@@ -101,9 +102,7 @@ func (c *Conn) Error(message string) error {
 	request.Header.Set("Content-Type", contentTypeHeader)
 	request.Header.Set("Accept", acceptHeader)
 
-	client := &http.Client{}
-
-	response, err := client.Do(request)
+	response, err := httpClient.Do(request)
 	if (err != nil) || (response.StatusCode != http.StatusCreated) {
 		return HttpRequestError
 	}
@@ -113,4 +112,5 @@ func (c *Conn) Error(message string) error {
 
 func init() {
 	notifier = &Notifier{Name: "gobadger", URL: "https://github.com/DavidHuie/gobadger", Version: "0.1"}
+	httpClient = &http.Client{}
 }
