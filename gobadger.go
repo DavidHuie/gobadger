@@ -3,7 +3,7 @@ package gobadger
 import (
 	"encoding/json"
 	"errors"
-	"log"
+	"fmt"
 	"net/http"
 	"os"
 	"runtime"
@@ -98,8 +98,6 @@ func (c *Conn) Error(message string) error {
 	payload := &Payload{Notifier: notifier, Error: error, Server: serverDetails}
 	json_payload, err := json.Marshal(payload)
 
-	log.Print(string(json_payload))
-
 	if err != nil {
 		return JsonEncodingError
 	}
@@ -125,9 +123,13 @@ func (c *Conn) Error(message string) error {
 	return nil
 }
 
-func init() {
-	notifier = &Notifier{Name: "gobadger", URL: "https://github.com/DavidHuie/gobadger", Version: "0.1"}
+// Logs similarly to Error, but with a format string
+func (c *Conn) Errorf(format_string string, params ...interface{}) error {
+	str := fmt.Sprintf(format_string, params...)
+	return c.Error(str)
+}
 
+func init() {
 	current_directory, err := os.Getwd()
 	if err != nil {
 		panic(err)
@@ -138,8 +140,20 @@ func init() {
 		panic(err)
 	}
 
+	// Try to locate the environment in a few different places
+	env := ""
+	env = os.Getenv("GOENV")
+	// Blame NationBuilder for this...
+	if env == "" {
+		env = os.Getenv("RAILS_ENV")
+	}
+	if env == "" {
+		env = os.Getenv("go")
+	}
+
 	project_root := &ProjectRoot{Path: current_directory}
-	serverDetails = &Server{EnvironmentName: "go", Hostname: hostname, ProjectRoot: project_root}
+	serverDetails = &Server{EnvironmentName: env, Hostname: hostname, ProjectRoot: project_root}
+	notifier = &Notifier{Name: "gobadger", URL: "https://github.com/DavidHuie/gobadger", Version: "0.1"}
 
 	httpClient = &http.Client{}
 }
