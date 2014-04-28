@@ -84,7 +84,7 @@ func getMetadata() (string, int, error) {
 }
 
 // Logs an error and associated metadata to HoneyBadger
-func (c *Conn) Error(message string) error {
+func (c *Conn) Error(message interface{}) error {
 	file, line, err := getMetadata()
 
 	// We've got bigger problems if we can't get stack
@@ -94,7 +94,7 @@ func (c *Conn) Error(message string) error {
 	}
 
 	backtrace := &Backtrace{File: file, Number: strconv.Itoa(line)}
-	error := &Error{Message: message, Backtrace: []*Backtrace{backtrace}}
+	error := &Error{Message: fmt.Sprintf("%s", message), Backtrace: []*Backtrace{backtrace}}
 	payload := &Payload{Notifier: notifier, Error: error, Server: serverDetails}
 	json_payload, err := json.Marshal(payload)
 
