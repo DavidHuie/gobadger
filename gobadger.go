@@ -103,7 +103,10 @@ func (c *Conn) Error(message string) error {
 	request.Header.Set("Accept", acceptHeader)
 
 	response, err := httpClient.Do(request)
-	if (err != nil) || (response.StatusCode != http.StatusCreated) {
+	if err != nil {
+		return err
+	}
+	if response.StatusCode != http.StatusCreated {
 		return HttpRequestError
 	}
 
