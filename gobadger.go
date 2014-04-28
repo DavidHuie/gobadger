@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"os"
 	"runtime"
 	"strconv"
 	"strings"
@@ -18,11 +19,11 @@ const (
 )
 
 var (
-	httpClient      *http.Client
-	lineTraceOffset = 2
+	httpClient    *http.Client
+	notifier      *Notifier
+	serverDetails *Server
 
-	// Use the same notifier JSON for all requests
-	notifier *Notifier
+	lineTraceOffset = 2
 
 	MalformedRequest  = errors.New("Malformed request")
 	LineTraceError    = errors.New("Couldn't get trace")
@@ -39,6 +40,17 @@ type Conn struct {
 type Payload struct {
 	Notifier *Notifier `json:"notifier"`
 	Error    *Error    `json:"error"`
+	Server   *Server   `json:"server"`
+}
+
+type Server struct {
+	ProjectRoot     *ProjectRoot `json:"project_root"`
+	EnvironmentName string       `json:"environment_name"`
+	Hostname        string       `json:"hostname"`
+}
+
+type ProjectRoot struct {
+	Path string `json:"path"`
 }
 
 type Notifier struct {
@@ -83,7 +95,7 @@ func (c *Conn) Error(message string) error {
 
 	backtrace := &Backtrace{File: file, Number: strconv.Itoa(line)}
 	error := &Error{Message: message, Backtrace: []*Backtrace{backtrace}}
-	payload := &Payload{Notifier: notifier, Error: error}
+	payload := &Payload{Notifier: notifier, Error: error, Server: serverDetails}
 	json_payload, err := json.Marshal(payload)
 
 	log.Print(string(json_payload))
@@ -115,5 +127,19 @@ func (c *Conn) Error(message string) error {
 
 func init() {
 	notifier = &Notifier{Name: "gobadger", URL: "https://github.com/DavidHuie/gobadger", Version: "0.1"}
+
+	current_directory, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+
+	hostname, err := os.Hostname()
+	if err != nil {
+		panic(err)
+	}
+
+	project_root := &ProjectRoot{Path: current_directory}
+	serverDetails = &Server{EnvironmentName: "go", Hostname: hostname, ProjectRoot: project_root}
+
 	httpClient = &http.Client{}
 }
