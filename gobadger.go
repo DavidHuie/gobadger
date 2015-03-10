@@ -60,8 +60,9 @@ type Notifier struct {
 }
 
 type Error struct {
-	Message   string       `json:"message"`
 	Backtrace []*Backtrace `json:"backtrace"`
+	Category  string       `json:"class"`
+	Message   string       `json:"message"`
 }
 
 type Backtrace struct {
@@ -84,7 +85,7 @@ func getMetadata() (string, int, error) {
 }
 
 // Logs an error and associated metadata to HoneyBadger
-func (c *Conn) Error(message interface{}) error {
+func (c *Conn) Error(category string, message interface{}) error {
 	file, line, err := getMetadata()
 
 	// We've got bigger problems if we can't get stack
@@ -94,7 +95,11 @@ func (c *Conn) Error(message interface{}) error {
 	}
 
 	backtrace := &Backtrace{File: file, Number: strconv.Itoa(line)}
-	error := &Error{Message: fmt.Sprintf("%s", message), Backtrace: []*Backtrace{backtrace}}
+	error := &Error{
+		Backtrace: []*Backtrace{backtrace},
+		Category:  category,
+		Message:   fmt.Sprintf("%s", message),
+	}
 	payload := &Payload{Notifier: notifier, Error: error, Server: serverDetails}
 	json_payload, err := json.Marshal(payload)
 
@@ -124,9 +129,9 @@ func (c *Conn) Error(message interface{}) error {
 }
 
 // Logs similarly to Error, but with a format string
-func (c *Conn) Errorf(format_string string, params ...interface{}) error {
+func (c *Conn) Errorf(category string, format_string string, params ...interface{}) error {
 	str := fmt.Sprintf(format_string, params...)
-	return c.Error(str)
+	return c.Error(category, str)
 }
 
 func init() {
