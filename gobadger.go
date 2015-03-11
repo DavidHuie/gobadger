@@ -23,8 +23,6 @@ var (
 	notifier      *Notifier
 	serverDetails *Server
 
-	lineTraceOffset = 2
-
 	MalformedRequest  = errors.New("Malformed request")
 	LineTraceError    = errors.New("Couldn't get trace")
 	JsonEncodingError = errors.New("Json encoding error")
@@ -33,8 +31,9 @@ var (
 )
 
 type Conn struct {
-	Key string
-	Url string
+	Key    string
+	Url    string
+	Offset int
 }
 
 type Payload struct {
@@ -71,13 +70,17 @@ type Backtrace struct {
 }
 
 // Returns a new "connection" to HoneyBadger
-func NewConn(api_key string) *Conn {
-	return &Conn{Key: api_key, Url: apiUrl}
+func NewConn(apiKey string, lineTraceOffset int) *Conn {
+	return &Conn{
+		Key:    apiKey,
+		Url:    apiUrl,
+		Offset: lineTraceOffset,
+	}
 }
 
 // Returns the file name and line number for the caller
-func getMetadata() (string, int, error) {
-	_, file, line, ok := runtime.Caller(lineTraceOffset)
+func (c *Conn) getMetadata() (string, int, error) {
+	_, file, line, ok := runtime.Caller(c.Offset + 2)
 	if !ok {
 		return "", 0, LineTraceError
 	}
@@ -86,7 +89,7 @@ func getMetadata() (string, int, error) {
 
 // Logs an error and associated metadata to HoneyBadger
 func (c *Conn) Error(category string, message interface{}) error {
-	file, line, err := getMetadata()
+	file, line, err := c.getMetadata()
 
 	// We've got bigger problems if we can't get stack
 	// information.
