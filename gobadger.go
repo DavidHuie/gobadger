@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -163,5 +164,7 @@ func init() {
 	serverDetails = &Server{EnvironmentName: env, Hostname: hostname, ProjectRoot: project_root}
 	notifier = &Notifier{Name: "gobadger", URL: "https://github.com/DavidHuie/gobadger", Version: "0.1"}
 
-	httpClient = &http.Client{}
+	httpClient = &http.Client{
+		Timeout: 30 * time.Second,
+	}
 }
